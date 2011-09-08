@@ -46,6 +46,11 @@ class Trees(object):
 
     def process(self, coords):
         try:
+            # Check if block is still a sapling
+            block = factory.world.sync_get_block(coords)
+            if block != blocks["sapling"].slot:
+                return
+
             metadata = factory.world.sync_get_metadata(coords)
             # Is this sapling ready to grow into a big tree? We use a bit-trick to
             # check.
@@ -141,6 +146,7 @@ class Grass(object):
                 # top of it, so check that first.
                 above = factory.world.sync_get_block((x, y + 1, z))
                 if above:
+                    self.reschedule()
                     return
 
                 # The number of grassy neighbors.
@@ -179,10 +185,12 @@ class Grass(object):
     def dig_hook(self, chunk, x, y, z, block):
         if y > 0:
             block = chunk.get_block((x, y - 1, z))
-            if block in self.blocks:
-                # Track it now.
-                coords = (chunk.x * 16 + x, y - 1, chunk.z * 16 + z)
-                self.tracked.add(coords)
+            coords = (chunk.x * 16 + x, y - 1, chunk.z * 16 + z)
+            # Feed the block below the dug block to automatons (including Grass).
+            # Note: the current instance of Grass is not being used as an automaton
+            for automaton in factory.automatons:
+                if block in automaton.blocks:
+                    automaton.feed(coords)
 
     name = "grass"
 
