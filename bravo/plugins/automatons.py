@@ -1,7 +1,7 @@
 from __future__ import division
 
 from itertools import product
-from random import randint, random
+from random import randint, random, sample
 
 from twisted.internet import reactor
 from twisted.internet.task import LoopingCall
@@ -106,14 +106,17 @@ class Grass(object):
 
     def __init__(self):
         self.tracked = set()
-        self.loop = LoopingCall(self.process)
+        self.running = False
 
     def start(self):
-        if not self.loop.running:
+        if not self.running:
+            self.loop = LoopingCall(self.process)
             self.loop.start(self.step, now=False)
+            self.running = True
 
     def stop(self):
-        if self.loop.running:
+        if self.running:
+            self.running = False
             self.loop.stop()
 
     def reschedule(self):
@@ -127,7 +130,8 @@ class Grass(object):
 
         # Effectively stop tracking this block. We'll add it back in if we're
         # not finished with it.
-        coords = self.tracked.pop()
+        coords = sample(self.tracked,1)[0]
+        self.tracked.discard(coords)
 
         # Try to do our neighbor lookups. If it can't happen, don't worry
         # about it; we can get to it later. Grass isn't exactly a

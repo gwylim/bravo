@@ -38,14 +38,17 @@ class Fluid(object):
         self.tracked = set()
         self.new = set()
 
-        self.loop = LoopingCall(self.process)
+        self.running = False
 
     def start(self):
-        if not self.loop.running:
+        if not self.running:
+            self.loop = LoopingCall(self.process)
             self.loop.start(self.step)
+            self.running = True
 
     def stop(self):
-        if self.loop.running:
+        if self.running:
+            self.running = False
             self.loop.stop()
 
     def schedule(self):
